@@ -9,7 +9,7 @@ const q = ref(4)
 const state = reactive({
   input: "",
   output: "",
-  q: 4,
+  //q: 4,
   binToDec: true,
   inputInvalid: false,
   qAndInputIncompatible: false,
@@ -24,8 +24,21 @@ state.output = computed(() => {
   }
 })
 
+function switchBinDec() {
+  let temp = (typeof state.output === "undefined") ? "" : state.output.toString()
+  let qFromDec = 0
+  if (temp.startsWith("Q")) {
+    qFromDec = parseInt(temp.split(":")[0].slice(1))
+    temp = temp.split(": ")[1]
+  }
+  state.binToDec = !state.binToDec
+  q.value = qFromDec
+  state.input = temp
+}
+
 watch(q, (newVal, oldVal) => {
-  if (newVal == "" || !Number.isInteger(newVal)) {
+  if (newVal == "") {
+  } else if (!Number.isInteger(newVal)) {
     q.value = 0
   } else if (newVal > 16) {
     q.value = 16
@@ -39,10 +52,11 @@ function calcAndExplainBinToDec() {
   let input = state.input.replace(/\s/g, "")
   let output = 0
   state.explainText = ""
+  state.qAndInputIncompatible = false
 
-  if (input.length == 0 || input.length % 8 != 0) {
+  if (input.length == 0 || q.value === "") {
     state.inputInvalid = false
-    return
+    return ""
   }
 
   if (input.length > 16 || input.match(/[^01]/g)) {
@@ -50,8 +64,8 @@ function calcAndExplainBinToDec() {
     return
   }
 
-  if (input.length < q.value) {
-    state.inputInvalid = true
+  if (input.length < q.value && input.length != 0) {
+    state.inputInvalid = false
     state.qAndInputIncompatible = true
     return
   }
@@ -64,7 +78,8 @@ function calcAndExplainBinToDec() {
   for (let i = 0; i < input.length; i++) {
     let pow = (input.length - q.value - i - 1) >= 0 ? (input.length - q.value - i - 1) : "(" + (input.length - q.value - i - 1) + ")"
     let nextPart = input[i] + " \u2219 2^" + pow
-    lengths.push(nextPart.length)
+    lengths.push(Math.max(nextPart.length, (parseInt(input[i]) * Math.pow(2, (input.length - q.value - i - 1))).toString().length))
+    state.explainText += " ".repeat(Math.max(lengths[i] - nextPart.length, 0))
     state.explainText += nextPart
     if (i != input.length - 1) {
       state.explainText += " + "
@@ -78,7 +93,7 @@ function calcAndExplainBinToDec() {
 
       output += result
 
-      state.explainText += " ".repeat(lengths[i] - result.toString().length)
+      state.explainText += " ".repeat(Math.max(lengths[i] - result.toString().length, 0))
       state.explainText += result
 
       if (i != input.length - 1) {
@@ -94,9 +109,161 @@ function calcAndExplainBinToDec() {
 }
 
 function calcAndExplainDecToBin() {
+  if (state.input == "") {
+    state.inputInvalid = false
+    state.explainText = ""
+    return ""
+  }
 
+  // verhindere, dass kommaeingabe einen Fehler zeigt:
+  const commaEnding = /^[0-9]+[.,]$/
+  if (commaEnding.exec(state.input) != null) {
+    state.inputInvalid = false
+    return ""
+  }
+
+  const numberFormat = /^[0-9]+([.,][0-9]+)?$/;
+  if (numberFormat.exec(state.input) == null) {
+    state.inputInvalid = true
+    state.explainText = ""
+    return ""
+  }
+
+  state.inputInvalid = false
+
+  let explainText = ""
+  let result = ""
+
+  let nachkomma = parseInt(state.input.split(",")[1] || state.input.split(".")[1])
+  let containsComma = (state.input.includes(",") || state.input.includes(".") && nachkomma != 0)
+  if (containsComma) {
+    explainText += "Die Zahl enthält Nachkommastellen.\nBetrachte die Vor- und Nachkommastellen getrennt als "
+    explainText += state.input.split(",")[0].split(".")[0] + " und 0,"
+    explainText += (state.input.includes(",") ? state.input.split(",")[1] : state.input.split(".")[1]) + ".\n\n"
+    explainText += "1. Wandel zunächst die Stellen vor dem Komma ins Binärsystem um.\n\n"
+  } else {
+    explainText += "1. Die Zahl enthält keine Nachkommastellen. Wandle die Zahl wie gewohnt ins Binärsystem um.\n\n"
+  }
+
+  let vorkomma = state.input.split(",")[0].split(".")[0]
+  let maxLength = vorkomma.length
+
+  while (vorkomma > 0) {
+    let rest = vorkomma % 2
+    result = rest.toString() + result
+    explainText += "   " + " ".repeat(maxLength - vorkomma.toString().length)
+    explainText += `${vorkomma} : 2 = ${Math.floor(vorkomma / 2)}, Rest ${rest}\n`
+    vorkomma = Math.floor(vorkomma / 2)
+  }
+  if (containsComma) {
+    explainText += "\n   Zwischenergebnis: " + result + "\n\n"
+  }
+
+  let qCounter = 0
+  if (containsComma) {
+    nachkomma = parseFloat("0." + (state.input.split(",")[1] || state.input.split(".")[1]))
+    explainText += `2. Wandle die Nachkommastelle ${nachkomma} ins Binärsystem um. Gehe dazu nach folgendem Schema vor:\n`
+    explainText += "   1. Multipliziere die Nachkommastelle mit 2.\n"
+    explainText += "   2. Die Stelle vor dem Komma ist die nächste Nachkommastelle.\n"
+    explainText += "   3. Falls bei Schritt 2 die Stelle vor dem Komma eine 1 war, dann mache daraus eine 0.\n"
+    explainText += "   4. Wiederhole die Schritte 1 bis 3, bis das Ergebnis 0,0 ist oder die gewünschte Genauigkeit erreicht ist.\n\n"
+
+
+    nachkomma = parseFloat("0." + (state.input.split(",")[1] || state.input.split(".")[1]))
+    let nachkommastellen = []
+
+    let maxLength = nachkomma.toString().length
+
+    while (nachkomma != 0) {
+      explainText += "      " + " ".repeat(maxLength - nachkomma.toString().length)
+      explainText += nachkomma + " \u2219 2 = "
+      nachkomma *= 2
+      nachkommastellen.push(nachkomma)
+      explainText += (nachkomma == 1 ? nachkomma.toFixed(1) : nachkomma) + "  --> Ziffer: "
+      if (nachkomma >= 1) {
+        result += "1"
+        explainText += "1"
+        nachkomma = parseFloat("0." + nachkomma.toString().split(".")[1])
+      } else {
+        result += "0"
+        explainText += "0"
+      }
+      qCounter++
+
+      let duplicatePosition = checkDuplicate(nachkommastellen)
+      if (duplicatePosition != null) {
+        explainText += ` !!!\n   Die letzte Nachkommastelle ${nachkommastellen[duplicatePosition.second]} kam bereits an der ${duplicatePosition.first + 1}. Stelle vor.\n`
+        explainText += `   Die Binärfolge [${result.slice(result.length - nachkommastellen.length + duplicatePosition.first, result.length - 1).split("").join(", ")}] wird sich daher unendlich oft wiederholen!\n`
+        qCounter += 16 - result.length
+        result = fillWithDuplicates(result, duplicatePosition.second - duplicatePosition.first)
+        break
+      }
+
+      explainText += "\n"
+
+      if (nachkomma == 0) {
+        explainText += "      " + " ".repeat(maxLength - 3)
+        explainText += "0.0 --> Ende\n"
+      } else if (result.length == 16) {
+        explainText += "\n   Die maximale Genauigkeit von 16 Stellen wurde erreicht.\n"
+        break
+      }
+    }
+  }
+
+  if (containsComma) {
+    explainText += `\n3. Verbinde Zwischenergebnis und Nachkommastellen zu: ${result.slice(0, result.length - qCounter)},${result.slice(result.length - qCounter)}\n`
+    explainText += `   Ersetze das Komma durch den Präfix Q${qCounter} und füge ggf. Leerzeichen ein.\n`
+  }
+
+  // insert whitespace each 8th character from the right:
+  if (result.length > 8) {
+    result = result.slice(0, result.length - 8) + " " + result.slice(result.length - 8)
+  }
+
+  /* if (result.length > 8) {
+    result = result.slice(0, 8) + " " + result.slice(8)
+  } */
+
+  result = "Q" + qCounter + ": " + ((result == "") ? "0" : result)
+
+  explainText += `\n   Ergebnis: ${result}`
+
+  state.explainText = explainText
+
+  return result
 }
 
+function fillWithDuplicates(result, repeat) {
+  let duplicate = result.slice(result.length - repeat, result.length)
+  let newResult = result.slice(0, result.length - repeat)
+  let i = 0
+  while (newResult.length < 16) {
+    newResult += duplicate[i]
+    i++
+    if (i == duplicate.length) {
+      i = 0
+    }
+  }
+  return newResult
+}
+
+function checkDuplicate(array) {
+  let duplicate = null
+  for (let i = 0; i < array.length; i++) {
+    let current = array[i]
+    for (let j = i + 1; j < array.length; j++) {
+      if (current == array[j]) {
+        duplicate = { "first": i, "second": j }
+        break
+      }
+    }
+    if (duplicate != null) {
+      break
+    }
+  }
+  return duplicate
+}
 
 </script>
 
@@ -105,7 +272,7 @@ function calcAndExplainDecToBin() {
   <div class="row">
     <div class="ioBox col-md-12 col-lg-5 d-flex flex-column">
       <div class="labelInputOutput">Eingabe</div>
-      <div class="d-flex flex-row align-items-center">
+      <div class="d-flex flex-row align-items-start">
         <div v-if="state.binToDec" class="inputOutputBase">
           Binär
         </div>
@@ -113,9 +280,10 @@ function calcAndExplainDecToBin() {
           Dezimal:
         </div>
 
-        <div class="input-group input-group-lg ms-1 q-group">
+        <div v-if="state.binToDec" class="input-group input-group-lg ms-1 q-group">
           <span class="input-group-text">Q</span>
-          <input class="form-control" type="number" step="1" min="0" max="16" v-model="q">
+          <input class="form-control" type="number" step="1" min="0" max="16" v-model="q"
+            :class="{ redBorder: state.qAndInputIncompatible }">
         </div>
         <div class="ms-2 flex-fill d-flex flex-column">
 
@@ -129,12 +297,11 @@ function calcAndExplainDecToBin() {
           </div>
 
           <div class="inputInvalidMessage" v-if=state.inputInvalid>
-            <div v-if="state.qAndInputIncompatible">Q muss kleiner oder gleich der Eingabelänge sein.</div>
-            <div v-else>Eingabe fehlerhaft!</div>
+            <div>Eingabe fehlerhaft!</div>
           </div>
         </div>
       </div>
-      <div v-if="state.binToDec" class="explainBinInput">
+      <div v-if="state.binToDec" class="explainInput">
         <ul>
           <li>
             Dieser Rechner kann Q0 bis Q16 berechnen.
@@ -144,6 +311,16 @@ function calcAndExplainDecToBin() {
           </li>
           <li>
             Die Zahl muss positiv sein.
+          </li>
+        </ul>
+      </div>
+      <div v-else class="explainInput">
+        <ul>
+          <li>
+            Die Zahl muss positiv sein.
+          </li>
+          <li>
+            Das Ergebnis wird eine maximale Genauigkeit von 16 Stellen haben.
           </li>
         </ul>
       </div>
@@ -194,7 +371,7 @@ function calcAndExplainDecToBin() {
   height: 75px;
 }
 
-.explainBinInput {
+.explainInput {
   text-align: left;
   margin-top: 10px;
 }
@@ -202,7 +379,9 @@ function calcAndExplainDecToBin() {
 .inputOutputBase {
   font-size: 1.5rem;
   font-weight: bold;
-  align-self: center;
+  height: 56px;
+  display: flex;
+  align-items: center;
 }
 
 .explainTextarea {
