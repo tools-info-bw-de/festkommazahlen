@@ -289,11 +289,8 @@ function checkDuplicate(array) {
 
 
           <div class="input-group-lg">
-            <!-- <div class="form-floating"> -->
             <input type="text" class="form-control" :class="{ redBorder: state.inputInvalid }" id="input"
-              placeholder="Eingabe" autofocus v-model="state.input"><!-- input-lg -->
-            <!-- <label for="input">Eingabe</label>
-            </div> -->
+              placeholder="Eingabe" autofocus v-model="state.input">
           </div>
 
           <div class="inputInvalidMessage" v-if=state.inputInvalid>
@@ -304,13 +301,10 @@ function checkDuplicate(array) {
       <div v-if="state.binToDec" class="explainInput">
         <ul>
           <li>
-            Dieser Rechner kann Q0 bis Q16 berechnen.
-          </li>
-          <li>
-            Die Binäreingabe muss 8 oder 16 Bit lang sein.
-          </li>
-          <li>
             Die Zahl muss positiv sein.
+          </li>
+          <li>
+            Dieser Rechner kann Q0 bis Q16 berechnen.
           </li>
         </ul>
       </div>
