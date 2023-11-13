@@ -225,10 +225,6 @@ function calcAndExplainDecToBin() {
     result = result.slice(0, result.length - 8) + " " + result.slice(result.length - 8)
   }
 
-  /* if (result.length > 8) {
-    result = result.slice(0, 8) + " " + result.slice(8)
-  } */
-
   result = "Q" + qCounter + ": " + ((result == "") ? "0" : result)
 
   explainText += `\n   Ergebnis: ${result}`
@@ -365,10 +361,6 @@ function checkDuplicate(array) {
   font-size: 1.2rem;
 }
 
-.input-lg {
-  height: 75px;
-}
-
 .explainInput {
   text-align: left;
   margin-top: 10px;
@@ -389,10 +381,6 @@ function checkDuplicate(array) {
   height: 100%;
 }
 
-.invisible {
-  visibility: hidden;
-}
-
 .redBorder {
   border-color: #842029;
   border-width: 2px;
@@ -406,9 +394,6 @@ function checkDuplicate(array) {
   border-radius: 5px;
 }
 
-.inputInvalid {
-  border-color: #842029;
-}
 
 input,
 select {
