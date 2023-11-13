@@ -9,7 +9,6 @@ const q = ref(4)
 const state = reactive({
   input: "",
   output: "",
-  //q: 4,
   binToDec: true,
   inputInvalid: false,
   qAndInputIncompatible: false,
