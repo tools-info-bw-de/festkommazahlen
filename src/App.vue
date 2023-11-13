@@ -155,6 +155,10 @@ function calcAndExplainDecToBin() {
     explainText += `${vorkomma} : 2 = ${Math.floor(vorkomma / 2)}, Rest ${rest}\n`
     vorkomma = Math.floor(vorkomma / 2)
   }
+
+  if (result == "") {
+    result = "0"
+  }
   if (containsComma) {
     explainText += "\n   Zwischenergebnis: " + result + "\n\n"
   }
