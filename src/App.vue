@@ -1,8 +1,9 @@
 <script setup>
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap"
+import { Popover } from "bootstrap"
 
-import { reactive, ref, computed, watch } from "vue"
+import { reactive, ref, computed, watch, onMounted } from "vue"
 
 const q = ref(4)
 
@@ -13,6 +14,15 @@ const state = reactive({
   inputInvalid: false,
   qAndInputIncompatible: false,
   explainText: "",
+})
+
+onMounted(() => {
+  const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+  const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new Popover(popoverTriggerEl, {
+    html: true,
+    sanitize: false,
+    trigger: "focus",
+  }))
 })
 
 state.output = computed(() => {
@@ -267,35 +277,42 @@ function checkDuplicate(array) {
 </script>
 
 <template>
+  <button type="button" class="infoBtn btn btn-outline-dark btn-sm" data-bs-container="body" data-bs-toggle="popover"
+    data-bs-placement="bottom"
+    data-bs-content='Quellcode auf <a href="https://github.com/tools-info-bw-de/festkommazahlen" target="_blank">github</a>!<br>§ MIT - Marco Kümmel'>info</button>
+
   <h1 class="mb-4">Festkommazahlen Rechner</h1>
   <div class="row">
     <div class="ioBox col-md-12 col-lg-5 d-flex flex-column">
       <div class="labelInputOutput">Eingabe</div>
       <div class="d-flex flex-row align-items-start">
         <div v-if="state.binToDec" class="inputOutputBase">
-          Binär
+          Binär:
         </div>
         <div v-else class="inputOutputBase">
           Dezimal:
         </div>
 
-        <div v-if="state.binToDec" class="input-group input-group-lg ms-1 q-group">
-          <span class="input-group-text">Q</span>
-          <input class="form-control" type="number" step="1" min="0" max="16" v-model="q"
-            :class="{ redBorder: state.qAndInputIncompatible }">
-        </div>
-        <div class="ms-2 flex-fill d-flex flex-column">
-
-
-          <div class="input-group-lg">
-            <input type="text" class="form-control" :class="{ redBorder: state.inputInvalid }" id="input"
-              placeholder="Eingabe" autofocus v-model="state.input">
+        <div class="inputs d-flex">
+          <div v-if="state.binToDec" class="input-group input-group-lg ms-1 q-group">
+            <span class="input-group-text">Q</span>
+            <input class="form-control" type="number" step="1" min="0" max="16" v-model="q"
+              :class="{ redBorder: state.qAndInputIncompatible }">
           </div>
+          <div class="ms-2 flex-fill d-flex flex-column">
 
-          <div class="inputInvalidMessage" v-if=state.inputInvalid>
-            <div>Eingabe fehlerhaft!</div>
+
+            <div class="input-group-lg">
+              <input type="text" class="form-control" :class="{ redBorder: state.inputInvalid }" id="input"
+                placeholder="Eingabe" autofocus v-model="state.input">
+            </div>
+
+            <div class="inputInvalidMessage" v-if=state.inputInvalid>
+              <div>Eingabe fehlerhaft!</div>
+            </div>
           </div>
         </div>
+
       </div>
       <div v-if="state.binToDec" class="explainInput">
         <ul>
@@ -350,6 +367,32 @@ function checkDuplicate(array) {
 </template>
 
 <style scoped>
+@media screen and (max-width: 450px) {
+  .inputs {
+    flex-direction: column !important;
+  }
+
+  .q-group {
+    margin-bottom: 3px;
+  }
+}
+
+@media screen and (min-width: 451px) {
+  .inputs {
+    flex-direction: row !important;
+  }
+}
+
+.inputs {
+  width: 100%;
+}
+
+.infoBtn {
+  position: absolute;
+  top: 10px !important;
+  right: 10px !important;
+}
+
 .q-group {
   min-width: 140px;
   max-width: 140px;
@@ -371,6 +414,7 @@ function checkDuplicate(array) {
   height: 56px;
   display: flex;
   align-items: center;
+  align-self: center;
 }
 
 .explainTextarea {
